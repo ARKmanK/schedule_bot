@@ -86,8 +86,7 @@ def process_excel_file(file_bytes: bytes, file_name: str) -> dict:
                             'subject': str(row['Название предмета']),
                             'teacher': str(row['Преподаватель']),
                             'time': str(row['Часы']),
-                            'audience': str(row['Ауд.']),
-                            'source_file': file_name
+                            'audience': str(row['Ауд.'])
                         }
                         
                         # Проверяем на дубликаты
@@ -114,9 +113,7 @@ def process_excel_file(file_bytes: bytes, file_name: str) -> dict:
         return {
             "status": "success",
             "data": existing_data,
-            "new_entries_count": len(new_entries),
-            "total_entries": len(existing_data["schedule_data"]),
-            "total_files": len(existing_data["meta"]["processed_files"])
+            "new_entries_count": len(new_entries)
         }
             
     except Exception as e:

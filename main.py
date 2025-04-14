@@ -18,5 +18,4 @@ bot.register_message_handler(handle_document, content_types=['document'])
 
 # Запуск бота
 if __name__ == '__main__':
-    print("Бот запущен...")
     bot.polling(none_stop=True)

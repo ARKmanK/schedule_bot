@@ -31,17 +31,11 @@ def handle_show_schedule(message: types.Message):
                 f"👨‍🏫 Преподаватель: {item['teacher']}\n"
                 f"⏰ Время: {item['time']}\n"
                 f"🏫 Аудитория: {item['audience']}\n"
-                f"📂 Источник: {item.get('source_file', 'неизвестно')}\n"
             )
             bot.send_message(message.chat.id, schedule_info)
             
         # Показываем статистику
-        stats = (
-            f"\n📊 Статистика:\n"
-            f"Всего записей: {len(data['schedule_data'])}\n"
-            f"Обработано файлов: {len(data['meta']['processed_files'])}\n"
-            f"Показано: 10 из {len(data['schedule_data'])}"
-        )
+        stats = f"\n📊 Показано: 10 из {len(data['schedule_data'])}"
         bot.send_message(message.chat.id, stats)
         
     except Exception as e:
@@ -70,13 +64,7 @@ def handle_document(message: types.Message):
             bot.reply_to(message, '✅ Файл обработан, но новых записей не найдено')
         else:
             save_data(result["data"])
-            report = (
-                f"✅ Файл успешно обработан\n"
-                f"📄 Имя файла: {file_name}\n"
-                f"🆕 Добавлено записей: {result['new_entries_count']}\n"
-                f"💾 Всего записей в базе: {result['total_entries']}\n"
-                f"📋 Всего файлов обработано: {result['total_files']}"
-            )
+            report = f"✅ Файл {file_name} успешно обработан"
             bot.reply_to(message, report)
             
     except Exception as e:
