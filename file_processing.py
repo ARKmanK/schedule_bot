@@ -38,7 +38,6 @@ def process_excel_file(file_bytes: bytes, file_name: str) -> dict:
         # Загружаем существующие данные
         existing_data = load_existing_data()
         
-        # Проверяем, не обрабатывался ли файл ранее
         if file_name in existing_data["meta"]["processed_files"]:
             return {
                 "status": "error",
@@ -50,44 +49,66 @@ def process_excel_file(file_bytes: bytes, file_name: str) -> dict:
         
         for sheet_name in xls.sheet_names:
             try:
+                # Читаем данные, пропуская первые 14 строк
                 df = pd.read_excel(xls, sheet_name=sheet_name, header=None, skiprows=14)
-                if df.empty or len(df.columns) < 5:
+                if df.empty or len(df.columns) < 6:
                     continue
                     
-                df.columns = df.iloc[0]
-                df = df[1:]
+                # Получаем заголовки из строки 15 (индекс 0 после skiprows=14)
+                headers = df.iloc[0].tolist()
                 
-                required_columns = {
-                    'Дата': 'date',
-                    'Название предмета': 'subject',
-                    'Преподаватель': 'teacher',
-                    'Часы': 'time',
-                    'Ауд.': 'audience'
-                }
+                # Создаем mapping колонок
+                column_mapping = {}
+                for i, header in enumerate(headers):
+                    if pd.isna(header) or str(header).strip() == '':
+                        # Безымянная колонка (тип занятия)
+                        column_mapping[i] = 'type'
+                    elif str(header).strip() == 'Дата':
+                        column_mapping[i] = 'date'
+                    elif str(header).strip() == 'Название предмета':
+                        column_mapping[i] = 'subject'
+                    elif str(header).strip() == 'Преподаватель':
+                        column_mapping[i] = 'teacher'
+                    elif str(header).strip() == 'Часы':
+                        column_mapping[i] = 'time'
+                    elif str(header).strip() == 'Ауд.':
+                        column_mapping[i] = 'audience'
+                
+                # Переименовываем колонки
+                df = df.rename(columns=column_mapping)
+                df = df[1:]  # Убираем строку с заголовками
                 
                 # Проверяем наличие всех необходимых колонок
-                missing_columns = [col for col in required_columns.keys() if col not in df.columns]
+                required_columns = ['date', 'subject', 'teacher', 'time', 'audience']
+                missing_columns = [col for col in required_columns if col not in df.columns]
                 if missing_columns:
                     print(f"Лист '{sheet_name}': отсутствуют колонки {', '.join(missing_columns)}")
                     continue
                 
+                # Колонка 'type' не обязательна
+                has_type = 'type' in df.columns
+                
                 for _, row in df.iterrows():
                     try:
-                        # Пропускаем строки с пустыми значениями
-                        if any(pd.isna(row[col]) for col in required_columns.keys()):
+                        # Пропускаем строки с пустыми значениями в ключевых полях
+                        if pd.isna(row['date']) or pd.isna(row['subject']) or pd.isna(row['teacher']):
                             continue
                             
-                        date_value = row['Дата']
+                        date_value = row['date']
                         date_str = date_value.strftime('%d.%m') if isinstance(date_value, datetime) else str(date_value).split()[0]
                         
                         new_entry = {
                             'sheet': sheet_name,
                             'date': date_str,
-                            'subject': str(row['Название предмета']),
-                            'teacher': str(row['Преподаватель']),
-                            'time': str(row['Часы']),
-                            'audience': str(row['Ауд.'])
+                            'subject': str(row['subject']),
+                            'teacher': str(row['teacher']),
+                            'time': str(row['time']),
+                            'audience': str(row['audience'])
                         }
+                        
+                        # Добавляем тип занятия, если колонка существует
+                        if has_type and not pd.isna(row.get('type')):
+                            new_entry['type'] = str(row['type'])
                         
                         # Проверяем на дубликаты
                         is_duplicate = any(

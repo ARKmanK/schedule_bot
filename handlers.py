@@ -29,6 +29,7 @@ def handle_show_schedule(message: types.Message):
                 f"📅 Дата: {item['date']}\n"
                 f"📚 Предмет: {item['subject']}\n"
                 f"👨‍🏫 Преподаватель: {item['teacher']}\n"
+                f"🔹 Тип: {item.get('type', '')}\n"
                 f"⏰ Время: {item['time']}\n"
                 f"🏫 Аудитория: {item['audience']}\n"
             )
