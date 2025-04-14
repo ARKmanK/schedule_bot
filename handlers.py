@@ -9,7 +9,8 @@ def handle_start(message: types.Message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton('Добавить расписание')
     item2 = types.KeyboardButton('Показать расписание')
-    markup.add(item1, item2)
+    item3 = types.KeyboardButton('Удалить файлы расписания')  # Новая кнопка
+    markup.add(item1, item2, item3)  # Добавьте item3 в разметку
     bot.reply_to(message, 'Выберите действие:', reply_markup=markup)
 
 def handle_add_schedule(message: types.Message):
@@ -71,3 +72,17 @@ def handle_document(message: types.Message):
     except Exception as e:
         print(f"Error handling document: {e}")
         bot.reply_to(message, '❌ Произошла ошибка при обработке файла. Пожалуйста, попробуйте снова.')
+
+def handle_clear_schedule(message: types.Message):
+    try:
+        file_path = 'data/schedule.json'
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            bot.reply_to(message, '✅ Файл расписания успешно удален')
+        else:
+            bot.reply_to(message, 'ℹ️ Файл расписания не найден (уже удален или не создавался)')
+            
+    except Exception as e:
+        print(f"Error clearing schedule: {e}")
+        bot.reply_to(message, '❌ Произошла ошибка при удалении файла расписания')
