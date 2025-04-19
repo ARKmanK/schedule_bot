@@ -40,7 +40,7 @@ def initialize_encryption():
         })
 
 def update_env_file(new_values):
-    """Обновляет .env файл с новыми значениями"""
+    """Обновляет .env файл с новыми значениями и синхронизирует os.environ"""
     env_path = ".env"
     env_vars = {}
     
@@ -61,6 +61,10 @@ def update_env_file(new_values):
         for key, value in env_vars.items():
             f.write(f"{key}={value}\n")
 
+    # Синхронизируем os.environ с новыми значениями
+    for key, value in new_values.items():
+        os.environ[key] = value
+
 def get_cipher():
     """Получение объекта шифрования Fernet"""
     key = base64.urlsafe_b64decode(os.getenv("ENCRYPTION_KEY"))
@@ -70,7 +74,7 @@ def update_admin_password(new_password):
     """Обновление пароля Admin"""
     cipher = get_cipher()
     encrypted_password = cipher.encrypt(new_password.encode())
-    # Обновляем зашифрованный пароль в .env
+    # Обновляем зашифрованный пароль в .env и os.environ
     update_env_file({
         "ENCRYPTED_ADMIN_PASSWORD": base64.urlsafe_b64encode(encrypted_password).decode()
     })
@@ -99,17 +103,25 @@ def create_keyboard_for_role(role):
 
 def handle_start(message: types.Message):
     """Обработчик команды /start"""
+    global pending_users, pending_password, user_roles
+
     chat_id = message.chat.id
-    # Очищаем состояния при старте
-    if chat_id in pending_users:
-        del pending_users[chat_id]
-    if chat_id in pending_password:
-        del pending_password[chat_id]
-    # Устанавливаем роль Teacher по умолчанию, если пользователь новый
-    if chat_id not in user_roles:
-        user_roles[chat_id] = "Teacher"
+    
+    # Сбрасываем все состояния (перезагрузка бота)
+    pending_users.clear()
+    pending_password.clear()
+    user_roles.clear()
+
+    # Повторно инициализируем шифрование
+    initialize_encryption()
+
+    # Устанавливаем роль Teacher по умолчанию для текущего пользователя
+    user_roles[chat_id] = "Teacher"
     role = user_roles[chat_id]
-    bot.reply_to(message, f'Выберите действие (роль: {role}):', reply_markup=create_keyboard_for_role(role))
+
+    # Отправляем сообщение о перезагрузке и начальном состоянии
+    bot.reply_to(message, 'Бот перезапущен. Все состояния сброшены.', reply_markup=create_keyboard_for_role(role))
+    bot.send_message(chat_id, f'Выберите действие (роль: {role}):', reply_markup=create_keyboard_for_role(role))
 
 def handle_change_role(message: types.Message):
     """Обработчик смены роли"""
